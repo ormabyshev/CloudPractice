@@ -1,0 +1,14 @@
+---
+# главный playbook
+
+- name: install docker all 3 VM 
+  import_playbook: playbooks/docker.yml
+
+- name: install broker VM B
+  import_playbook: playbooks/broker.yml
+
+- name: install client VM A
+  import_playbook: playbooks/client.yml
+
+- name: install VM C
+  import_playbook: playbooks/server.yml

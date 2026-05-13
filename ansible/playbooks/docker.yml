@@ -1,0 +1,68 @@
+---
+
+- name: install docker all VM
+  hosts: all
+  become: true
+  
+  tasks:
+    - name: delete old docker list
+      file:
+        path: /etc/apt/sources.list.d/docker.list
+        state: absent
+        
+    - name: update list of packages
+      apt:
+        update_cache: yes
+  
+    - name: install dependencies for docker
+      apt:
+        name: 
+          - ca-certificates
+          - curl
+        state: present
+    
+    - name: create directory for docker
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+      
+    - name: add docker key
+      shell: | 
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+        chmod a+r /etc/apt/keyrings/docker.asc
+      args:
+        creates: /etc/apt/keyrings/docker.asc
+
+    - name: add docker repository
+      shell: | 
+        echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+        https://download.docker.com/linux/ubuntu \
+        $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+        tee /etc/apt/sources.list.d/docker.list > /dev/null
+      args:
+        creates: /etc/apt/sources.list.d/docker.list
+      
+    - name: install docker
+      apt:
+        name: 
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        update_cache: yes  
+        state: present 
+    
+    - name: add user ubuntu to group docker
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+    
+    - name: run and enable docker 
+      systemd:
+        name: docker
+        enabled: yes
+        state: started

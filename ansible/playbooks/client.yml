@@ -1,0 +1,33 @@
+---
+- name: Running sim sensor
+  hosts: client
+  become: true
+  
+  vars:
+    docker_practice_repo: "https://github.com/ormabyshev/DockerPractice.git"
+    repo_branch: "develop"
+    work_dir: "/opc/client"
+  
+  tasks:
+    - name: install git
+      apt:
+        name: git
+        state: present
+
+    - name: Clone repository
+      git:
+        repo: "{{docker_practice_repo}}"
+        dest: "{{work_dir}}"
+        version: "{{repo_branch}}"
+        force: yes
+
+    - name: update .env file
+      lineinfile:
+        path: "{{work_dir}}/vms/client/simulator/.env"
+        regexp: "MQTT_BROKER_HOST="
+        line: "MQTT_BROKER_HOST={{broker_private_ip}}"
+        create: yes
+      
+    - name: run sim sensor
+      community.docker.docker_compose_v2:
+        project_src: "{{work_dir}}/vms/client/simulator"

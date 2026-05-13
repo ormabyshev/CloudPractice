@@ -1,0 +1,40 @@
+---
+
+- name: Run MQTT Broker 
+  hosts: broker
+  become: true
+
+  tasks:
+    - name: create working directory
+      file:
+        path: /opt/broker
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+    
+    - name: copy docker compose file for Broker
+      copy:
+        dest: /opt/broker/docker-compose.yml
+        content: | # многострочная строка
+          version : "3"
+          services:
+            broker:
+              image: eclipse-mosquitto
+              container_name: broker
+              ports:
+                - "1883:1883" 
+              volumes:
+                - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+              restart: unless-stopped 
+    
+    - name: create mosquitto.conf
+      copy:
+        dest: /opt/broker/mosquitto.conf
+        content: |
+          listener 1883
+          allow_anonymous true
+
+    - name: start broker container 
+      community.docker.docker_compose_v2:
+        project_src: /opt/broker
+        state: present
